@@ -491,6 +491,12 @@ class JobAllocationApp:
         """Load data from uploaded files"""
         try:
             with st.spinner("Loading data..."):
+                # Reset file pointers to beginning
+                if operator_file:
+                    operator_file.seek(0)
+                if task_file:
+                    task_file.seek(0)
+                
                 # Load operator data
                 operator_data = self.operator_loader.load_from_uploaded_file(operator_file)
                 
@@ -520,8 +526,20 @@ class JobAllocationApp:
                 
                 st.success("Data loaded successfully!")
                 
+        except PermissionError:
+            st.error("File access denied. Please check file permissions and try again.")
+        except pd.errors.EmptyDataError:
+            st.error("The uploaded file appears to be empty. Please check your file and try again.")
+        except pd.errors.ParserError as e:
+            st.error(f"Error parsing file format: {str(e)}")
+        except ValueError as e:
+            st.error(f"Data validation error: {str(e)}")
         except Exception as e:
             st.error(f"Error loading data: {str(e)}")
+            # Show more details for debugging
+            st.error(f"Error type: {type(e).__name__}")
+            if hasattr(e, '__cause__') and e.__cause__:
+                st.error(f"Caused by: {str(e.__cause__)}")
     
     def execute_algorithm(self, algorithm_type: AlgorithmType, params: dict):
         """Execute single algorithm"""

@@ -40,29 +40,40 @@ class OperatorLoader:
         file_name = uploaded_file.name
         suffix = Path(file_name).suffix.lower()
 
-        if suffix == ".csv":
-            df = pd.read_csv(uploaded_file)
-            return OperatorLoader._dataframe_to_operators(df)
-        elif suffix in [".xlsx", ".xls"]:
-            df = pd.read_excel(uploaded_file)
-            return OperatorLoader._dataframe_to_operators(df)
-        elif suffix == ".json":
-            content = uploaded_file.read()
-            if isinstance(content, bytes):
-                content = content.decode("utf-8")
-            data = json.loads(content)
+        try:
+            # Reset file pointer to beginning
+            uploaded_file.seek(0)
+            
+            if suffix == ".csv":
+                df = pd.read_csv(uploaded_file)
+                return OperatorLoader._dataframe_to_operators(df)
+            elif suffix in [".xlsx", ".xls"]:
+                df = pd.read_excel(uploaded_file)
+                return OperatorLoader._dataframe_to_operators(df)
+            elif suffix == ".json":
+                content = uploaded_file.read()
+                if isinstance(content, bytes):
+                    content = content.decode("utf-8")
+                data = json.loads(content)
 
-            if isinstance(data, dict) and "operators" in data:
-                data = data["operators"]
+                if isinstance(data, dict) and "operators" in data:
+                    data = data["operators"]
 
-            operators = []
-            for item in data:
-                operator = Operator.from_dict(item)
-                operators.append(operator)
+                operators = []
+                for item in data:
+                    operator = Operator.from_dict(item)
+                    operators.append(operator)
 
-            return operators
-        else:
-            raise ValueError(f"Unsupported file format: {suffix}")
+                return operators
+            else:
+                raise ValueError(f"Unsupported file format: {suffix}")
+        except Exception as e:
+            # Reset file pointer on error for potential retry
+            try:
+                uploaded_file.seek(0)
+            except:
+                pass
+            raise e
 
     @staticmethod
     def load_from_csv(file_path: Union[str, Path]) -> List[Operator]:

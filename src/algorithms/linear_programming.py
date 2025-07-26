@@ -169,6 +169,10 @@ class LinearProgrammingOptimizer(OptimizationAlgorithm):
                         duration_hours=task.required_hours
                     )
     
+    def optimize(self) -> ScheduleResult:
+        """公開用の最適化メソッド"""
+        return self.run()
+    
     def get_algorithm_parameters(self) -> Dict[str, any]:
         """アルゴリズム固有のパラメータを取得"""
         params = {

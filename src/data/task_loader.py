@@ -40,29 +40,40 @@ class TaskLoader:
         file_name = uploaded_file.name
         suffix = Path(file_name).suffix.lower()
 
-        if suffix == ".csv":
-            df = pd.read_csv(uploaded_file)
-            return TaskLoader._dataframe_to_tasks(df)
-        elif suffix in [".xlsx", ".xls"]:
-            df = pd.read_excel(uploaded_file)
-            return TaskLoader._dataframe_to_tasks(df)
-        elif suffix == ".json":
-            content = uploaded_file.read()
-            if isinstance(content, bytes):
-                content = content.decode("utf-8")
-            data = json.loads(content)
+        try:
+            # Reset file pointer to beginning
+            uploaded_file.seek(0)
+            
+            if suffix == ".csv":
+                df = pd.read_csv(uploaded_file)
+                return TaskLoader._dataframe_to_tasks(df)
+            elif suffix in [".xlsx", ".xls"]:
+                df = pd.read_excel(uploaded_file)
+                return TaskLoader._dataframe_to_tasks(df)
+            elif suffix == ".json":
+                content = uploaded_file.read()
+                if isinstance(content, bytes):
+                    content = content.decode("utf-8")
+                data = json.loads(content)
 
-            if isinstance(data, dict) and "tasks" in data:
-                data = data["tasks"]
+                if isinstance(data, dict) and "tasks" in data:
+                    data = data["tasks"]
 
-            tasks = []
-            for item in data:
-                task = Task.from_dict(item)
-                tasks.append(task)
+                tasks = []
+                for item in data:
+                    task = Task.from_dict(item)
+                    tasks.append(task)
 
-            return tasks
-        else:
-            raise ValueError(f"Unsupported file format: {suffix}")
+                return tasks
+            else:
+                raise ValueError(f"Unsupported file format: {suffix}")
+        except Exception as e:
+            # Reset file pointer on error for potential retry
+            try:
+                uploaded_file.seek(0)
+            except:
+                pass
+            raise e
 
     @staticmethod
     def load_from_csv(file_path: Union[str, Path]) -> List[Task]:
