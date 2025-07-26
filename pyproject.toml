@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "center-joballocation"
+version = "0.1.0"
+description = "Job allocation optimization demo using multiple algorithms"
+authors = ["Rai Rintarou <ikkmno123@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pandas = "^2.2.0"
+streamlit = "^1.31.0"
+pulp = "^2.8.0"
+ortools = "^9.8.0"
+deap = "^1.4.1"
+matplotlib = "^3.8.0"
+plotly = "^5.18.0"
+openpyxl = "^3.1.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+black = "^24.1.0"
+flake8 = "^7.0.0"
+mypy = "^1.8.0"
+isort = "^5.13.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
