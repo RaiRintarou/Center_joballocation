@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(touch:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(python3:*)",
+      "Bash(poetry run:*)",
+      "Bash(cat:*)"
     ],
     "deny": []
   }
