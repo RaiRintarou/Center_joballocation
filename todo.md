@@ -50,21 +50,16 @@
   - [x] PuLPモデル構築
   - [x] 制約条件の定義
   - [x] 目的関数の定義
-- [x] cp_sat.py - CP-SAT実装
-  - [x] OR-Toolsモデル構築
-  - [x] 制約条件の定義
-  - [x] 最適化実行
-- [x] genetic_algorithm.py - 遺伝的アルゴリズム
-  - [x] DEAP設定
-  - [x] 個体表現の定義
-  - [x] 適応度関数
-  - [x] 交叉・突然変異操作
-- [x] heuristic.py - ヒューリスティック法
-  - [x] 貪欲法実装
-  - [x] 改善アルゴリズム
-- [x] deferred_acceptance.py - DA実装
-  - [x] Gale-Shapleyアルゴリズム
-  - [x] 選好リストの生成
+- [] cp_sat.py - CP-SAT実装
+  - [] OR-Toolsモデル構築
+  - [] 制約条件の定義
+  - [] 最適化実行
+- [] heuristic.py - ヒューリスティック法
+  - [] 貪欲法実装
+  - [] 改善アルゴリズム
+- [] deferred_acceptance.py - DA実装
+  - [] Gale-Shapleyアルゴリズム
+  - [] 選好リストの生成
 
 ## 5. スケジューリング機能（src/utils/）
 - [x] scheduler.py 実装

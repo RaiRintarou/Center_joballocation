@@ -5,7 +5,10 @@
       "Bash(tree:*)",
       "Bash(python3:*)",
       "Bash(poetry run:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(rm:*)",
+      "Bash(pkill:*)"
     ],
     "deny": []
   }

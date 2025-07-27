@@ -6,13 +6,17 @@ from plotly.subplots import make_subplots
 import numpy as np
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, time
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.patches import Rectangle
+import matplotlib.font_manager as fm
 
 from ..models import ScheduleResult, Operator, Task, ScheduleComparison
 from ..utils.metrics import MetricsCalculator
 
 
 class VisualizationComponents:
-    """Çü¿ï–³óİüÍóÈnÆ¯é¹"""
+    """ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½nï¿½ï¿½ï¿½"""
     
     @staticmethod
     def schedule_timeline_chart(
@@ -22,46 +26,46 @@ class VisualizationComponents:
         height: int = 600
     ) -> go.Figure:
         """
-        ¹±¸åüë¿¤àé¤óó’\
+        ï¿½ï¿½ï¿½ï¿½ï¿½ë¿¤ï¿½ï¿½ï¿½ï¿½\
         
         Args:
-            result: ¹±¸åüëPœ
-            operators: ªÚìü¿üê¹È
-            tasks: ¿¹¯ê¹È
-            height: ÁãüÈnØU
+            result: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Pï¿½
+            operators: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+            tasks: ï¿½ï¿½ï¿½ï¿½ï¿½
+            height: ï¿½ï¿½ï¿½ï¿½nï¿½U
         
         Returns:
-            PlotlyÕ£®å¢ªÖ¸§¯È
+            PlotlyÕ£ï¿½å¢ªÖ¸ï¿½ï¿½ï¿½
         """
-        # Çü¿–™
+        # ï¿½ï¿½ï¿½ï¿½ï¿½
         task_map = {task.task_id: task for task in tasks}
         operator_map = {op.operator_id: op for op in operators}
         
-        # «éüÑìÃÈ
+        # ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         colors = px.colors.qualitative.Set3
         task_colors = {}
         color_index = 0
         
-        # ¿¹¯¿¤×Thkr’rŠSf
+        # ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Thkrï¿½rï¿½Sf
         unique_task_types = list(set(task.task_type for task in tasks))
         for task_type in unique_task_types:
             task_colors[task_type] = colors[color_index % len(colors)]
             color_index += 1
         
-        # Õ£®å¢\
+        # Õ£ï¿½ï¿½\
         fig = go.Figure()
         
-        # ªÚìü¿üThnYøMn
+        # ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ThnYï¿½Mn
         operator_positions = {op.operator_id: i for i, op in enumerate(operators)}
         
-        # rŠSfÇü¿’æ
+        # rï¿½Sfï¿½ï¿½ï¿½ï¿½ï¿½
         for assignment in result.assignments:
             operator = operator_map[assignment.operator_id]
             task = task_map[assignment.task_id]
             
             y_pos = operator_positions[assignment.operator_id]
             
-            # ¿¹¯ÖíÃ¯’ı 
+            # ï¿½ï¿½ï¿½ï¿½ï¿½Ã¯ï¿½ï¿½ï¿½
             fig.add_trace(go.Scatter(
                 x=[assignment.start_hour, assignment.end_hour, assignment.end_hour, assignment.start_hour, assignment.start_hour],
                 y=[y_pos - 0.4, y_pos - 0.4, y_pos + 0.4, y_pos + 0.4, y_pos - 0.4],
@@ -72,17 +76,17 @@ class VisualizationComponents:
                 name=f"{task.name}",
                 hovertemplate=(
                     f"<b>{task.name}</b><br>"
-                    f"ªÚìü¿ü: {operator.name}<br>"
-                    f"B“: {assignment.start_hour:02d}:00 - {assignment.end_hour:02d}:00<br>"
-                    f"@B“: {assignment.duration_hours}B“<br>"
-                    f"¿¹¯¿¤×: {task.task_type}<br>"
-                    f"*H¦: {task.priority.name}<br>"
+                    f"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: {operator.name}<br>"
+                    f"Bï¿½: {assignment.start_hour:02d}:00 - {assignment.end_hour:02d}:00<br>"
+                    f"@ï¿½Bï¿½: {assignment.duration_hours}Bï¿½<br>"
+                    f"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: {task.task_type}<br>"
+                    f"*Hï¿½: {task.priority.name}<br>"
                     "<extra></extra>"
                 ),
                 showlegend=False
             ))
             
-            # ¿¹¯’Æ­¹ÈhWfı 
+            # ï¿½ï¿½ï¿½ï¿½Æ­ï¿½ï¿½hWfï¿½ï¿½
             fig.add_trace(go.Scatter(
                 x=[(assignment.start_hour + assignment.end_hour) / 2],
                 y=[y_pos],
@@ -94,7 +98,7 @@ class VisualizationComponents:
                 hoverinfo='skip'
             ))
         
-        # äÙB“nÌo’ı 
+        # ï¿½ï¿½Bï¿½nï¿½oï¿½ï¿½ï¿½
         for i, operator in enumerate(operators):
             work_start = operator.available_hours[0].hour
             work_end = operator.available_hours[1].hour
@@ -106,20 +110,20 @@ class VisualizationComponents:
                 fillcolor='rgba(200, 200, 200, 0.3)',
                 line=dict(color='gray', width=1, dash='dot'),
                 mode='lines',
-                name='äÙB“',
+                name='ï¿½ï¿½Bï¿½',
                 showlegend=i == 0,
                 hoverinfo='skip'
             ))
         
-        # ì¤¢¦È-š
+        # ì¤¢ï¿½ï¿½-ï¿½
         fig.update_layout(
             title=dict(
-                text=f"¹±¸åüë¿¤àé¤ó - {result.algorithm_type.value}",
+                text=f"ï¿½ï¿½ï¿½ï¿½ï¿½ë¿¤ï¿½ï¿½ï¿½ - {result.algorithm_type.value}",
                 x=0.5,
                 font=dict(size=16)
             ),
             xaxis=dict(
-                title="B“",
+                title="Bï¿½",
                 tickmode='linear',
                 tick0=8,
                 dtick=1,
@@ -129,7 +133,7 @@ class VisualizationComponents:
                 gridcolor='lightgray'
             ),
             yaxis=dict(
-                title="ªÚìü¿ü",
+                title="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½",
                 tickmode='array',
                 tickvals=list(range(len(operators))),
                 ticktext=[op.name for op in operators],
@@ -152,18 +156,18 @@ class VisualizationComponents:
         metric: str = "assigned_tasks"
     ) -> go.Figure:
         """
-        ¢ë´êºàÔÒ°éÕ’\
+        ï¿½ï¿½ï¿½ï¿½ï¿½Ò°ï¿½Õ’\
         
         Args:
-            results: ¢ë´êºàŸLPœnø
-            operators: ªÚìü¿üê¹È
-            tasks: ¿¹¯ê¹È
-            metric: ÔY‹áÈê¯¹
+            results: ï¿½ï¿½ï¿½ï¿½ï¿½LPï¿½nï¿½ï¿½
+            operators: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+            tasks: ï¿½ï¿½ï¿½ï¿½ï¿½
+            metric: ï¿½Yï¿½ï¿½ï¿½ê¯¹
         
         Returns:
-            PlotlyÕ£®å¢ªÖ¸§¯È
+            PlotlyÕ£ï¿½å¢ªÖ¸ï¿½ï¿½ï¿½
         """
-        # áÈê¯¹—
+        # ï¿½ï¿½ê¯¹ï¿½
         algorithm_names = []
         values = []
         
@@ -184,10 +188,10 @@ class VisualizationComponents:
             else:
                 values.append(0)
         
-        # «éüŞÃ×
+        # ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         colors = px.colors.qualitative.Set1[:len(algorithm_names)]
         
-        # Ò°éÕ\
+        # Ò°ï¿½ï¿½\
         fig = go.Figure(data=[
             go.Bar(
                 x=algorithm_names,
@@ -199,23 +203,23 @@ class VisualizationComponents:
             )
         ])
         
-        # áÈê¯¹n-š
+        # ï¿½ï¿½ê¯¹n-ï¿½
         metric_titles = {
-            "assigned_tasks": "rŠSf¿¹¯p",
-            "utilization_rate": "hS¹‡",
-            "execution_time": "ŸLB“ (Ò)",
-            "assignment_rate": "rŠSf‡"
+            "assigned_tasks": "rï¿½Sfï¿½ï¿½ï¿½p",
+            "utilization_rate": "hSï¿½ï¿½",
+            "execution_time": "ï¿½LBï¿½ (ï¿½)",
+            "assignment_rate": "rï¿½Sfï¿½"
         }
         
         title = metric_titles.get(metric, metric)
         
         fig.update_layout(
             title=dict(
-                text=f"¢ë´êºàÔ - {title}",
+                text=f"ï¿½ï¿½ï¿½ï¿½ï¿½ - {title}",
                 x=0.5,
                 font=dict(size=16)
             ),
-            xaxis_title="¢ë´êºà",
+            xaxis_title="ï¿½ï¿½ï¿½ï¿½",
             yaxis_title=title,
             plot_bgcolor='white',
             font=dict(size=12),
@@ -231,20 +235,20 @@ class VisualizationComponents:
         tasks: List[Task]
     ) -> go.Figure:
         """
-        <Í‡ìüÀüÁãüÈ’\
+        <Í‡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È’\
         
         Args:
-            results: ¢ë´êºàŸLPœnø
-            operators: ªÚìü¿üê¹È
-            tasks: ¿¹¯ê¹È
+            results: ï¿½ï¿½ï¿½ï¿½ï¿½LPï¿½nï¿½ï¿½
+            operators: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+            tasks: ï¿½ï¿½ï¿½ï¿½ï¿½
         
         Returns:
-            PlotlyÕ£®å¢ªÖ¸§¯È
+            PlotlyÕ£ï¿½å¢ªÖ¸ï¿½ï¿½ï¿½
         """
         metrics_calc = MetricsCalculator(operators, tasks)
         
-        # ìüÀüÁãüÈ(nÇü¿–™
-        categories = ['rŠSf‡', 'hS¹‡', '\m wĞéó¹', 'ŸL¦', '6uˆ']
+        # ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(nï¿½ï¿½ï¿½ï¿½ï¿½
+        categories = ['rï¿½Sfï¿½', 'hSï¿½ï¿½', '\mï¿½wï¿½ï¿½ï¿½', 'ï¿½Lï¿½', '6uï¿½']
         
         fig = go.Figure()
         
@@ -253,17 +257,17 @@ class VisualizationComponents:
         for i, (algorithm_name, result) in enumerate(results.items()):
             metrics = metrics_calc.calculate_all_metrics(result)
             
-            # «Æ´ên$’0-1nÄòkc
+            # ï¿½Æ´ï¿½n$ï¿½0-1nï¿½ï¿½kcï¿½
             values = [
-                metrics['task_metrics'].assignment_rate,  # rŠSf‡
-                metrics['overall_metrics'].overall_efficiency,  # hS¹‡
-                metrics['overall_metrics'].workload_balance,  # \m wĞéó¹
-                1.0 - min(result.execution_time_seconds / 10.0, 1.0),  # ŸL¦p	
-                1.0 - min(metrics['overall_metrics'].constraint_violations / 10.0, 1.0)  # 6uˆ
+                metrics['task_metrics'].assignment_rate,  # rï¿½Sfï¿½
+                metrics['overall_metrics'].overall_efficiency,  # hSï¿½ï¿½
+                metrics['overall_metrics'].workload_balance,  # \mï¿½wï¿½ï¿½ï¿½
+                1.0 - min(result.execution_time_seconds / 10.0, 1.0),  # ï¿½Lï¿½p	
+                1.0 - min(metrics['overall_metrics'].constraint_violations / 10.0, 1.0)  # 6uï¿½
             ]
             
             fig.add_trace(go.Scatterpolar(
-                r=values + [values[0]],  # ‰X_óbkY‹_ n$’ı 
+                r=values + [values[0]],  # ï¿½X_ï¿½bkYï¿½_ï¿½n$ï¿½ï¿½ï¿½
                 theta=categories + [categories[0]],
                 fill='toself',
                 fillcolor=f"rgba{(*px.colors.hex_to_rgb(colors[i % len(colors)]), 0.3)}",
@@ -281,7 +285,7 @@ class VisualizationComponents:
                 )
             ),
             title=dict(
-                text="¢ë´êºà'ıÔ (ìüÀüÁãüÈ)",
+                text="ï¿½ï¿½ï¿½ï¿½'ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)",
                 x=0.5,
                 font=dict(size=16)
             ),
@@ -298,29 +302,29 @@ class VisualizationComponents:
         tasks: List[Task]
     ) -> go.Figure:
         """
-        ªÚìü¿ü%<Í‡ÁãüÈ’\
+        ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½%<Í‡ï¿½ï¿½ï¿½È’\
         
         Args:
-            result: ¹±¸åüëPœ
-            operators: ªÚìü¿üê¹È
-            tasks: ¿¹¯ê¹È
+            result: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Pï¿½
+            operators: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+            tasks: ï¿½ï¿½ï¿½ï¿½ï¿½
         
         Returns:
-            PlotlyÕ£®å¢ªÖ¸§¯È
+            PlotlyÕ£ï¿½å¢ªÖ¸ï¿½ï¿½ï¿½
         """
         metrics_calc = MetricsCalculator(operators, tasks)
         operator_metrics = metrics_calc.calculate_operator_metrics(result)
         
-        # Çü¿–™
+        # ï¿½ï¿½ï¿½ï¿½ï¿½
         names = [om.operator_name for om in operator_metrics]
         utilization_rates = [om.utilization_rate for om in operator_metrics]
         assigned_hours = [om.total_assigned_hours for om in operator_metrics]
         available_hours = [om.available_hours for om in operator_metrics]
         
-        # Ò°éÕ\
+        # Ò°ï¿½ï¿½\
         fig = go.Figure()
         
-        # <Í‡nÒ°éÕ
+        # <Í‡nÒ°ï¿½ï¿½
         fig.add_trace(go.Bar(
             name='<Í‡',
             x=names,
@@ -331,21 +335,21 @@ class VisualizationComponents:
             hovertemplate='<b>%{x}</b><br><Í‡: %{y:.1%}<extra></extra>'
         ))
         
-        # î<Í‡é¤ó‹80%	
+        # ï¿½<Í‡ï¿½ï¿½ï¿½80%	
         fig.add_hline(
             y=0.8,
             line_dash="dash",
             line_color="red",
-            annotation_text="î<Í‡ (80%)"
+            annotation_text="ï¿½<Í‡ (80%)"
         )
         
         fig.update_layout(
             title=dict(
-                text="ªÚìü¿ü%<Í‡",
+                text="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½%<Í‡",
                 x=0.5,
                 font=dict(size=16)
             ),
-            xaxis_title="ªÚìü¿ü",
+            xaxis_title="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½",
             yaxis_title="<Í‡",
             yaxis=dict(tickformat='.0%', range=[0, 1]),
             plot_bgcolor='white',
@@ -358,21 +362,21 @@ class VisualizationComponents:
     @staticmethod
     def task_priority_distribution_chart(tasks: List[Task]) -> go.Figure:
         """
-        ¿¹¯*H¦ÁãüÈ’\
+        ï¿½ï¿½ï¿½*Hï¿½ï¿½ï¿½ï¿½È’\
         
         Args:
-            tasks: ¿¹¯ê¹È
+            tasks: ï¿½ï¿½ï¿½ï¿½ï¿½
         
         Returns:
-            PlotlyÕ£®å¢ªÖ¸§¯È
+            PlotlyÕ£ï¿½å¢ªÖ¸ï¿½ï¿½ï¿½
         """
-        # *H¦%n«¦óÈ
+        # *Hï¿½%nï¿½ï¿½ï¿½ï¿½
         priority_counts = {}
         for task in tasks:
             priority = task.priority.name
             priority_counts[priority] = priority_counts.get(priority, 0) + 1
         
-        # †°éÕ\
+        # ï¿½ï¿½ï¿½ï¿½\
         labels = list(priority_counts.keys())
         values = list(priority_counts.values())
         colors = ['#ff9999', '#66b3ff', '#99ff99', '#ffcc99']
@@ -381,12 +385,12 @@ class VisualizationComponents:
             labels=labels,
             values=values,
             marker=dict(colors=colors[:len(labels)]),
-            hovertemplate='<b>%{label}</b><br>¿¹¯p: %{value}<br>r: %{percent}<extra></extra>'
+            hovertemplate='<b>%{label}</b><br>ï¿½ï¿½ï¿½p: %{value}<br>r: %{percent}<extra></extra>'
         )])
         
         fig.update_layout(
             title=dict(
-                text="¿¹¯*H¦",
+                text="ï¿½ï¿½ï¿½*Hï¿½",
                 x=0.5,
                 font=dict(size=16)
             ),
@@ -398,18 +402,18 @@ class VisualizationComponents:
     @staticmethod
     def execution_time_comparison_chart(results: Dict[str, ScheduleResult]) -> go.Figure:
         """
-        ŸLB“ÔÁãüÈ’\
+        ï¿½LBï¿½ï¿½ï¿½ï¿½ï¿½È’\
         
         Args:
-            results: ¢ë´êºàŸLPœnø
+            results: ï¿½ï¿½ï¿½ï¿½ï¿½LPï¿½nï¿½ï¿½
         
         Returns:
-            PlotlyÕ£®å¢ªÖ¸§¯È
+            PlotlyÕ£ï¿½å¢ªÖ¸ï¿½ï¿½ï¿½
         """
         algorithm_names = [name.replace('_', ' ').title() for name in results.keys()]
         execution_times = [result.execution_time_seconds for result in results.values()]
         
-        # *Ò°éÕ\
+        # *Ò°ï¿½ï¿½\
         fig = go.Figure(data=[
             go.Bar(
                 x=execution_times,
@@ -418,18 +422,18 @@ class VisualizationComponents:
                 marker_color='lightcoral',
                 text=[f"{time:.2f}s" for time in execution_times],
                 textposition='auto',
-                hovertemplate='<b>%{y}</b><br>ŸLB“: %{x:.2f}Ò<extra></extra>'
+                hovertemplate='<b>%{y}</b><br>ï¿½LBï¿½: %{x:.2f}ï¿½<extra></extra>'
             )
         ])
         
         fig.update_layout(
             title=dict(
-                text="¢ë´êºàŸLB“Ô",
+                text="ï¿½ï¿½ï¿½ï¿½ï¿½LBï¿½ï¿½",
                 x=0.5,
                 font=dict(size=16)
             ),
-            xaxis_title="ŸLB“ (Ò)",
-            yaxis_title="¢ë´êºà",
+            xaxis_title="ï¿½LBï¿½ (ï¿½)",
+            yaxis_title="ï¿½ï¿½ï¿½ï¿½",
             plot_bgcolor='white',
             font=dict(size=12),
             showlegend=False
@@ -444,41 +448,41 @@ class VisualizationComponents:
         max_rows: int = 10
     ) -> None:
         """
-        Çü¿×ìÓåüÆüÖë’h:
+        ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½h:
         
         Args:
-            data: h:Y‹Çü¿nê¹È
-            title: ÆüÖën¿¤Èë
-            max_rows: h:Y‹ 'Lp
+            data: h:Yï¿½ï¿½ï¿½ï¿½nï¿½ï¿½
+            title: ï¿½ï¿½ï¿½ï¿½nï¿½ï¿½ï¿½ï¿½
+            max_rows: h:Yï¿½'Lp
         """
         st.subheader(title)
         
         if not data:
-            st.info("h:Y‹Çü¿LBŠ~[“")
+            st.info("h:Yï¿½ï¿½ï¿½ï¿½LBï¿½~[ï¿½")
             return
         
-        # Çü¿’DataFramek	Û
+        # ï¿½ï¿½ï¿½ï¿½DataFramek	ï¿½
         if hasattr(data[0], 'to_dict'):
             df = pd.DataFrame([item.to_dict() for item in data[:max_rows]])
         else:
             df = pd.DataFrame(data[:max_rows])
         
-        # qÅ1
+        # qï¿½1
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Ïöp", len(data))
+            st.metric("ï¿½ï¿½p", len(data))
         with col2:
-            st.metric("h:öp", min(max_rows, len(data)))
+            st.metric("h:ï¿½p", min(max_rows, len(data)))
         with col3:
             if len(data) > max_rows:
-                st.metric("^h:öp", len(data) - max_rows)
+                st.metric("^h:ï¿½p", len(data) - max_rows)
         
-        # ÆüÖëh:
+        # ï¿½ï¿½ï¿½ï¿½h:
         st.dataframe(df, use_container_width=True)
         
-        # s0Å1
+        # s0ï¿½1
         if hasattr(data[0], 'to_dict'):
-            with st.expander("«éàÅ1", expanded=False):
+            with st.expander("ï¿½ï¿½ï¿½ï¿½1", expanded=False):
                 columns_info = []
                 for col in df.columns:
                     dtype = str(df[col].dtype)
@@ -486,10 +490,10 @@ class VisualizationComponents:
                     unique_count = df[col].nunique()
                     
                     columns_info.append({
-                        "«éà": col,
-                        "Çü¿‹": dtype,
+                        "ï¿½ï¿½ï¿½": col,
+                        "ï¿½ï¿½ï¿½ï¿½": dtype,
                         "NULL$p": null_count,
-                        "æËü¯$p": unique_count
+                        "ï¿½ï¿½ï¿½ï¿½$p": unique_count
                     })
                 
                 info_df = pd.DataFrame(columns_info)
@@ -502,17 +506,17 @@ class VisualizationComponents:
         tasks: List[Task]
     ) -> go.Figure:
         """
-        ¹±¸åüë¬óÈÁãüÈ’\
+        ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È’\
         
         Args:
-            result: ¹±¸åüëPœ
-            operators: ªÚìü¿üê¹È
-            tasks: ¿¹¯ê¹È
+            result: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Pï¿½
+            operators: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+            tasks: ï¿½ï¿½ï¿½ï¿½ï¿½
         
         Returns:
-            PlotlyÕ£®å¢ªÖ¸§¯È
+            PlotlyÕ£ï¿½å¢ªÖ¸ï¿½ï¿½ï¿½
         """
-        # Çü¿–™
+        # ï¿½ï¿½ï¿½ï¿½ï¿½
         task_map = {task.task_id: task for task in tasks}
         operator_map = {op.operator_id: op for op in operators}
         
@@ -531,32 +535,32 @@ class VisualizationComponents:
             })
         
         if not gantt_data:
-            # znÁãüÈ’ÔY
+            # znï¿½ï¿½ï¿½È’ï¿½Y
             fig = go.Figure()
             fig.update_layout(
-                title="¹±¸åüë¬óÈÁãüÈ - Çü¿jW",
-                xaxis_title="B“",
-                yaxis_title="¿¹¯"
+                title="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ - ï¿½ï¿½ï¿½jW",
+                xaxis_title="Bï¿½",
+                yaxis_title="ï¿½ï¿½ï¿½"
             )
             return fig
         
-        # DataFramek	Û
+        # DataFramek	ï¿½
         df = pd.DataFrame(gantt_data)
         
-        # ¬óÈÁãüÈ\
+        # ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\
         fig = px.timeline(
             df,
             x_start="Start",
             x_end="Finish",
             y="Task",
             color="Resource",
-            title="¹±¸åüë¬óÈÁãüÈ",
+            title="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½",
             hover_data=["Priority"]
         )
         
         fig.update_layout(
-            xaxis_title="B“",
-            yaxis_title="¿¹¯",
+            xaxis_title="Bï¿½",
+            yaxis_title="ï¿½ï¿½ï¿½",
             font=dict(size=12),
             height=max(400, len(gantt_data) * 30)
         )
@@ -570,31 +574,31 @@ class VisualizationComponents:
         tasks: List[Task]
     ) -> None:
         """
-        Yyfnï–’h:Y‹qá½ÃÉ
+        Yyfnï¿½ï¿½h:Yï¿½qï¿½ï¿½ï¿½
         
         Args:
-            results: ¢ë´êºàŸLPœnø
-            operators: ªÚìü¿üê¹È
-            tasks: ¿¹¯ê¹È
+            results: ï¿½ï¿½ï¿½ï¿½ï¿½LPï¿½nï¿½ï¿½
+            operators: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+            tasks: ï¿½ï¿½ï¿½ï¿½ï¿½
         """
         if not results:
-            st.info("h:Y‹PœLBŠ~[“")
+            st.info("h:Yï¿½Pï¿½LBï¿½~[ï¿½")
             return
         
-        # ¿Ög.ï–’Q‹
+        # ï¿½ï¿½g.ï¿½ï¿½Qï¿½
         tabs = st.tabs([
-            "=Ê ¹±¸åüë¿¤àé¤ó",
-            "=È Ô°éÕ", 
-            "<¯ <Í‡",
-            "=Ë Çü¿×ìÓåü"
+            "=ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ë¿¤ï¿½ï¿½ï¿½",
+            "=ï¿½ ï¿½ï¿½ï¿½ï¿½", 
+            "<ï¿½ <Í‡ï¿½",
+            "=ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"
         ])
         
         with tabs[0]:
-            st.header("¹±¸åüë¿¤àé¤ó")
+            st.header("ï¿½ï¿½ï¿½ï¿½ï¿½ë¿¤ï¿½ï¿½ï¿½")
             
-            # ¢ë´êºàx
+            # ï¿½ï¿½ï¿½ï¿½xï¿½
             selected_algorithm = st.selectbox(
-                "h:Y‹¢ë´êºà",
+                "h:Yï¿½ï¿½ï¿½ï¿½ï¿½",
                 options=list(results.keys()),
                 format_func=lambda x: x.replace('_', ' ').title()
             )
@@ -606,38 +610,38 @@ class VisualizationComponents:
                 st.plotly_chart(timeline_fig, use_container_width=True)
         
         with tabs[1]:
-            st.header("¢ë´êºàÔ")
+            st.header("ï¿½ï¿½ï¿½ï¿½ï¿½")
             
             if len(results) > 1:
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    # rŠSf¿¹¯pÔ
+                    # rï¿½Sfï¿½ï¿½ï¿½pï¿½
                     bar_fig = VisualizationComponents.comparison_bar_chart(
                         results, operators, tasks, "assigned_tasks"
                     )
                     st.plotly_chart(bar_fig, use_container_width=True)
                 
                 with col2:
-                    # ŸLB“Ô
+                    # ï¿½LBï¿½ï¿½
                     time_fig = VisualizationComponents.execution_time_comparison_chart(results)
                     st.plotly_chart(time_fig, use_container_width=True)
                 
-                # ìüÀüÁãüÈ
+                # ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                 radar_fig = VisualizationComponents.utilization_radar_chart(
                     results, operators, tasks
                 )
                 st.plotly_chart(radar_fig, use_container_width=True)
             else:
-                st.info("Ôko2då
-n¢ë´êºàPœLÅgY")
+                st.info("ï¿½ko2dï¿½
+nï¿½ï¿½ï¿½ï¿½Pï¿½LÅgY")
         
         with tabs[2]:
-            st.header("<Í‡")
+            st.header("<Í‡ï¿½")
             
-            # ¢ë´êºàx
+            # ï¿½ï¿½ï¿½ï¿½xï¿½
             selected_algorithm = st.selectbox(
-                "Y‹¢ë´êºà",
+                "ï¿½Yï¿½ï¿½ï¿½ï¿½ï¿½",
                 options=list(results.keys()),
                 format_func=lambda x: x.replace('_', ' ').title(),
                 key="utilization_algo_select"
@@ -647,24 +651,175 @@ n¢ë´êºàPœLÅgY")
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    # ªÚìü¿ü%<Í‡
+                    # ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½%<Í‡
                     util_fig = VisualizationComponents.operator_utilization_chart(
                         results[selected_algorithm], operators, tasks
                     )
                     st.plotly_chart(util_fig, use_container_width=True)
                 
                 with col2:
-                    # ¿¹¯*H¦
+                    # ï¿½ï¿½ï¿½*Hï¿½
                     priority_fig = VisualizationComponents.task_priority_distribution_chart(tasks)
                     st.plotly_chart(priority_fig, use_container_width=True)
         
         with tabs[3]:
-            st.header("Çü¿×ìÓåü")
+            st.header("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½")
             
             col1, col2 = st.columns(2)
             
             with col1:
-                VisualizationComponents.data_preview_table(operators, "ªÚìü¿ü §")
+                VisualizationComponents.data_preview_table(operators, "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½")
             
             with col2:
-                VisualizationComponents.data_preview_table(tasks, "¿¹¯ §")
+                VisualizationComponents.data_preview_table(tasks, "ï¿½ï¿½ï¿½ï¿½")    
+    @staticmethod
+    def plot_shift_schedule(df: pd.DataFrame, date: str) -> plt.Figure:
+        """
+        Staff-by-time Gantt chart matching Optamo screenshot specifications.
+        
+        Args:
+            df: DataFrame with columns: staff, task, start, end
+                start/end are datetime or pd.Timestamp objects
+            date: Date string like "2025-04-26"
+        
+        Returns:
+            matplotlib.Figure object (also saves to ./shift_{date}.png)
+        """
+        # Set up matplotlib to handle Japanese text
+        plt.rcParams['font.family'] = 'DejaVu Sans'
+        plt.rcParams['font.size'] = 10
+        
+        # Create figure and axis
+        fig, ax = plt.subplots(figsize=(12, 8))
+        
+        # Get unique staff members and sort them
+        staff_list = df['staff'].unique()
+        staff_positions = {staff: i for i, staff in enumerate(staff_list)}
+        
+        # Define color mapping for tasks
+        task_colors = {
+            'å—ä»˜': '#FF6B6B',
+            'è¨ºå¯Ÿè£œåŠ©': '#4ECDC4',
+            'æ¤œæŸ»': '#45B7D1',
+            'å‡¦ç½®': '#FFA07A',
+            'æ›¸é¡ä½œæˆ': '#98D8C8',
+            'ã‚«ã‚¦ãƒ³ã‚»ãƒªãƒ³ã‚°': '#F7DC6F',
+            'åœ¨åº«ç®¡ç†': '#BB8FCE',
+            'æ¸…æƒ': '#85C1E2'
+        }
+        
+        # Plot each shift
+        bar_height = 0.8
+        for _, row in df.iterrows():
+            staff = row['staff']
+            task = row['task']
+            start_time = pd.to_datetime(row['start'])
+            end_time = pd.to_datetime(row['end'])
+            
+            # Handle midnight crossing
+            if end_time < start_time:
+                # First part: from start to midnight (24:00)
+                start_hour = start_time.hour + start_time.minute / 60
+                rect1 = Rectangle(
+                    (start_hour, staff_positions[staff] - bar_height/2),
+                    24 - start_hour,
+                    bar_height,
+                    facecolor=task_colors.get(task, '#CCCCCC'),
+                    edgecolor='black',
+                    linewidth=0.5
+                )
+                ax.add_patch(rect1)
+                
+                # Add text label in the middle of first part
+                text_x1 = start_hour + (24 - start_hour) / 2
+                ax.text(text_x1, staff_positions[staff], task,
+                       ha='center', va='center', fontsize=9)
+                
+                # Second part: from midnight (0:00) to end
+                end_hour = end_time.hour + end_time.minute / 60
+                rect2 = Rectangle(
+                    (0, staff_positions[staff] - bar_height/2),
+                    end_hour,
+                    bar_height,
+                    facecolor=task_colors.get(task, '#CCCCCC'),
+                    edgecolor='black',
+                    linewidth=0.5
+                )
+                ax.add_patch(rect2)
+                
+                # Add text label in the middle of second part if there's space
+                if end_hour > 1:
+                    text_x2 = end_hour / 2
+                    ax.text(text_x2, staff_positions[staff], task,
+                           ha='center', va='center', fontsize=9)
+            else:
+                # Normal case: no midnight crossing
+                start_hour = start_time.hour + start_time.minute / 60
+                end_hour = end_time.hour + end_time.minute / 60
+                duration = end_hour - start_hour
+                
+                rect = Rectangle(
+                    (start_hour, staff_positions[staff] - bar_height/2),
+                    duration,
+                    bar_height,
+                    facecolor=task_colors.get(task, '#CCCCCC'),
+                    edgecolor='black',
+                    linewidth=0.5
+                )
+                ax.add_patch(rect)
+                
+                # Add text label in the middle of the bar
+                text_x = start_hour + duration / 2
+                ax.text(text_x, staff_positions[staff], task,
+                       ha='center', va='center', fontsize=9)
+        
+        # Set up axes
+        ax.set_xlim(9, 18)
+        ax.set_ylim(-0.5, len(staff_list) - 0.5)
+        
+        # X-axis: hours
+        ax.set_xticks(range(9, 19))
+        ax.set_xticklabels([f'{h}:00' for h in range(9, 19)])
+        ax.set_xlabel('Time', fontsize=11)
+        
+        # Y-axis: staff names
+        ax.set_yticks(range(len(staff_list)))
+        ax.set_yticklabels(staff_list)
+        ax.set_ylabel('Staff', fontsize=11)
+        
+        # Add grid
+        ax.grid(True, axis='x', color='lightgray', linewidth=0.5, alpha=0.7)
+        ax.set_axisbelow(True)
+        
+        # Add title with date
+        ax.set_title(date, fontsize=14, pad=20)
+        
+        # Create legend
+        legend_elements = [mpatches.Patch(facecolor=color, edgecolor='black', 
+                                        linewidth=0.5, label=task)
+                          for task, color in task_colors.items()]
+        ax.legend(handles=legend_elements, loc='upper right', bbox_to_anchor=(1.15, 1),
+                 fontsize=9, frameon=True, fancybox=True, shadow=True)
+        
+        # Style the plot
+        ax.spines['top'].set_visible(True)
+        ax.spines['right'].set_visible(True)
+        ax.spines['bottom'].set_visible(True)
+        ax.spines['left'].set_visible(True)
+        for spine in ax.spines.values():
+            spine.set_edgecolor('black')
+            spine.set_linewidth(1)
+        
+        # Set background color
+        ax.set_facecolor('white')
+        fig.patch.set_facecolor('white')
+        
+        # Adjust layout to prevent label cutoff
+        plt.tight_layout()
+        
+        # Save the figure
+        output_path = f'./shift_{date}.png'
+        fig.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
+        
+        return fig
+EOF < /dev/null

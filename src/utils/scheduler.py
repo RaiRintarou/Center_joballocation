@@ -8,10 +8,6 @@ import logging
 from ..models import Operator, Task, ScheduleResult, ScheduleComparison, AlgorithmType
 from ..algorithms.base import OptimizationAlgorithm
 from ..algorithms.linear_programming import LinearProgrammingOptimizer
-from ..algorithms.cp_sat import CPSATOptimizer
-from ..algorithms.genetic_algorithm import GeneticAlgorithmOptimizer
-from ..algorithms.heuristic import HeuristicOptimizer
-from ..algorithms.deferred_acceptance import DeferredAcceptanceOptimizer
 
 
 class SchedulerStatus(Enum):
@@ -36,11 +32,7 @@ class JobScheduler:
         
         # Algorithm class mapping
         self.algorithm_classes = {
-            AlgorithmType.LINEAR_PROGRAMMING: LinearProgrammingOptimizer,
-            AlgorithmType.CP_SAT: CPSATOptimizer,
-            AlgorithmType.GENETIC_ALGORITHM: GeneticAlgorithmOptimizer,
-            AlgorithmType.HEURISTIC: HeuristicOptimizer,
-            AlgorithmType.DEFERRED_ACCEPTANCE: DeferredAcceptanceOptimizer
+            AlgorithmType.LINEAR_PROGRAMMING: LinearProgrammingOptimizer
         }
     
     def set_data(self, operators: List[Operator], tasks: List[Task]) -> None:
@@ -70,8 +62,9 @@ class JobScheduler:
             
             self.logger.info(f"Starting {algorithm_type.value} algorithm")
             
-            # Run optimization
-            result = algorithm.optimize(self.operators, self.tasks, **kwargs)
+            # Setup and run optimization
+            algorithm.setup(self.operators, self.tasks)
+            result = algorithm.run()
             
             # Record execution time
             execution_time = time.time() - start_time
@@ -117,16 +110,15 @@ class JobScheduler:
             self.current_algorithm = None
     
     def run_all_algorithms(self, **kwargs) -> Dict[AlgorithmType, ScheduleResult]:
-        """Run all available algorithms"""
+        """Run all available algorithms (currently only Linear Programming)"""
         results = {}
         
-        for algorithm_type in AlgorithmType:
-            try:
-                result = self.run_algorithm(algorithm_type, **kwargs)
-                results[algorithm_type] = result
-            except Exception as e:
-                self.logger.warning(f"Algorithm {algorithm_type.value} failed: {str(e)}")
-                continue
+        # Only run Linear Programming
+        try:
+            result = self.run_algorithm(AlgorithmType.LINEAR_PROGRAMMING, **kwargs)
+            results[AlgorithmType.LINEAR_PROGRAMMING] = result
+        except Exception as e:
+            self.logger.warning(f"Algorithm {AlgorithmType.LINEAR_PROGRAMMING.value} failed: {str(e)}")
         
         return results
     
@@ -190,8 +182,8 @@ class JobScheduler:
     def get_all_algorithms_info(self) -> Dict[AlgorithmType, Dict[str, Any]]:
         """Get information about all available algorithms"""
         info = {}
-        for algo_type in AlgorithmType:
-            info[algo_type] = self.get_algorithm_info(algo_type)
+        # Only include Linear Programming
+        info[AlgorithmType.LINEAR_PROGRAMMING] = self.get_algorithm_info(AlgorithmType.LINEAR_PROGRAMMING)
         return info
     
     def validate_data(self) -> Dict[str, List[str]]:

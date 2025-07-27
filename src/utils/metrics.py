@@ -4,6 +4,11 @@ from typing import Dict, List, Tuple, Optional, Any
 from dataclasses import dataclass
 from collections import defaultdict
 import statistics
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from datetime import datetime, time
+import numpy as np
 
 from ..models import ScheduleResult, ScheduleComparison, Operator, Task, Assignment
 
@@ -304,3 +309,212 @@ class MetricsCalculator:
         }
         
         return summary
+    
+    def plot_shift_schedule(self, df: pd.DataFrame, date: str) -> plt.Figure:
+        """
+        Create a Gantt chart visualization of staff shifts.
+        
+        Args:
+            df: DataFrame with columns ['staff', 'task', 'start', 'end']
+            date: Date string in format "YYYY-MM-DD"
+            
+        Returns:
+            matplotlib.Figure object
+        """
+        # Set up the figure with white background
+        fig, ax = plt.subplots(figsize=(12, 8), facecolor='white')
+        ax.set_facecolor('white')
+        
+        # Configure font - try to use a font that supports Japanese
+        import matplotlib.font_manager as fm
+        
+        # Try to find a Japanese font
+        japanese_fonts = ['Hiragino Sans', 'Yu Gothic', 'MS Gothic', 'Noto Sans CJK JP']
+        font_found = False
+        
+        for font_name in japanese_fonts:
+            if any(font_name in f.name for f in fm.fontManager.ttflist):
+                plt.rcParams['font.family'] = font_name
+                font_found = True
+                break
+        
+        # Fallback to sans-serif if no Japanese font found
+        if not font_found:
+            plt.rcParams['font.family'] = 'sans-serif'
+            
+        plt.rcParams['font.size'] = 10
+        
+        # Get unique staff members in order
+        staff_list = df['staff'].unique().tolist() if not df.empty else []
+        staff_positions = {staff: i for i, staff in enumerate(staff_list)}
+        
+        # Color mapping for tasks (fixed hex codes)
+        task_colors = {
+            'task1': '#FF6B6B',  # Red
+            'task2': '#4ECDC4',  # Teal
+            'task3': '#45B7D1',  # Blue
+            'task4': '#96CEB4',  # Green
+            'task5': '#FECA57',  # Yellow
+            'task6': '#DDA0DD',  # Plum
+            'task7': '#98D8C8',  # Mint
+            'task8': '#F7DC6F',  # Light Yellow
+        }
+        
+        # Default color for unmapped tasks
+        default_color = '#A0A0A0'
+        
+        # Process each shift
+        bar_height = 0.8
+        stacked_shifts = defaultdict(list)  # Track overlapping shifts per staff
+        
+        for _, row in df.iterrows():
+            staff = row['staff']
+            task = row['task']
+            start = row['start']
+            end = row['end']
+            
+            # Convert to hours if datetime objects
+            if isinstance(start, (datetime, pd.Timestamp)):
+                start_hour = start.hour + start.minute / 60
+            else:
+                start_hour = float(start)
+                
+            if isinstance(end, (datetime, pd.Timestamp)):
+                end_hour = end.hour + end.minute / 60
+            else:
+                end_hour = float(end)
+            
+            # Handle midnight crossing (split into two bars)
+            if end_hour < start_hour:
+                # First part: from start to midnight (24)
+                self._draw_shift_bar(ax, staff_positions[staff], start_hour, 24,
+                                   task, task_colors.get(task, default_color),
+                                   bar_height, stacked_shifts[staff])
+                # Second part: from midnight (0) to end
+                self._draw_shift_bar(ax, staff_positions[staff], 0, end_hour,
+                                   task, task_colors.get(task, default_color),
+                                   bar_height, stacked_shifts[staff])
+            else:
+                self._draw_shift_bar(ax, staff_positions[staff], start_hour, end_hour,
+                                   task, task_colors.get(task, default_color),
+                                   bar_height, stacked_shifts[staff])
+        
+        # Set up axes
+        ax.set_ylim(-0.5, len(staff_list) - 0.5)
+        ax.set_xlim(9, 18)
+        
+        # Y-axis: staff names
+        ax.set_yticks(range(len(staff_list)))
+        ax.set_yticklabels(staff_list)
+        ax.invert_yaxis()  # Top to bottom
+        
+        # X-axis: hours
+        ax.set_xticks(range(9, 19))
+        ax.set_xlabel('Hour')
+        ax.grid(True, axis='x', alpha=0.3, color='gray', linestyle='-', linewidth=0.5)
+        
+        # Add date as title
+        ax.set_title(date, fontsize=14, pad=20)
+        
+        # Add border
+        for spine in ax.spines.values():
+            spine.set_edgecolor('black')
+            spine.set_linewidth(1)
+        
+        # Create legend
+        legend_elements = []
+        for task, color in sorted(task_colors.items()):
+            if task in df['task'].values:
+                legend_elements.append(mpatches.Patch(color=color, label=task))
+        
+        if legend_elements:
+            ax.legend(handles=legend_elements, loc='upper right', bbox_to_anchor=(1.15, 1))
+        
+        # Tight layout
+        plt.tight_layout()
+        
+        # Save the figure
+        output_path = f'./shift_{date}.png'
+        fig.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
+        
+        return fig
+    
+    def _draw_shift_bar(self, ax, staff_pos, start_hour, end_hour, task_name,
+                       color, bar_height, stacked_list):
+        """Helper method to draw a single shift bar with stacking support"""
+        # Calculate vertical offset for stacking
+        overlaps = []
+        for existing in stacked_list:
+            if not (end_hour <= existing['start'] or start_hour >= existing['end']):
+                overlaps.append(existing['offset'])
+        
+        # Find the minimum available offset
+        offset = 0
+        if overlaps:
+            offset = max(overlaps) + 0.15  # 4px ≈ 0.15 in figure units
+        
+        # Draw the bar
+        duration = end_hour - start_hour
+        y_position = staff_pos - bar_height/2 + offset
+        
+        rect = mpatches.Rectangle((start_hour, y_position), duration, bar_height,
+                                 facecolor=color, edgecolor='black', linewidth=0.5)
+        ax.add_patch(rect)
+        
+        # Add task name text
+        text_x = start_hour + duration / 2
+        text_y = y_position + bar_height / 2
+        ax.text(text_x, text_y, task_name, ha='center', va='center',
+               fontsize=9, color='white' if self._is_dark_color(color) else 'black')
+        
+        # Track this shift for stacking
+        stacked_list.append({
+            'start': start_hour,
+            'end': end_hour,
+            'offset': offset
+        })
+    
+    def _is_dark_color(self, hex_color):
+        """Helper to determine if text should be white or black"""
+        # Convert hex to RGB
+        hex_color = hex_color.lstrip('#')
+        r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        # Calculate luminance
+        luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+        return luminance < 0.5
+    
+    def generate_gantt_chart_from_result(self, result: ScheduleResult, date: str = None) -> plt.Figure:
+        """
+        Generate a Gantt chart from a ScheduleResult object.
+        
+        Args:
+            result: ScheduleResult containing assignments
+            date: Optional date string, defaults to today
+            
+        Returns:
+            matplotlib.Figure object
+        """
+        if date is None:
+            date = datetime.now().strftime("%Y-%m-%d")
+        
+        # Convert ScheduleResult to DataFrame format
+        data = []
+        for assignment in result.assignments:
+            operator = self.operator_map.get(assignment.operator_id)
+            task = self.task_map.get(assignment.task_id)
+            
+            if operator and task:
+                # Convert hour-based times to datetime for consistency
+                start_time = datetime.strptime(f"{assignment.start_hour:02d}:00", "%H:%M")
+                end_hour = assignment.start_hour + assignment.duration_hours
+                end_time = datetime.strptime(f"{int(end_hour):02d}:{int((end_hour % 1) * 60):02d}", "%H:%M")
+                
+                data.append({
+                    'staff': operator.name,
+                    'task': task.name,
+                    'start': start_time,
+                    'end': end_time
+                })
+        
+        df = pd.DataFrame(data)
+        return self.plot_shift_schedule(df, date)

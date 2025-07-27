@@ -8,6 +8,8 @@ import io
 from pathlib import Path
 import sys
 import os
+from datetime import datetime, date
+import matplotlib.pyplot as plt
 
 # Add project root to Python path
 project_root = Path(__file__).parent.parent.parent
@@ -21,6 +23,7 @@ from src.data.validators import DataValidator
 from src.utils.scheduler import JobScheduler
 from src.utils.metrics import MetricsCalculator
 from src.utils.export import ResultExporter
+from src.ui.gantt_chart import plot_shift_schedule
 
 
 class JobAllocationApp:
@@ -178,11 +181,7 @@ class JobAllocationApp:
         
         # Algorithm selection
         algorithm_options = {
-            "Linear Programming (PuLP)": AlgorithmType.LINEAR_PROGRAMMING,
-            "Constraint Programming (CP-SAT)": AlgorithmType.CP_SAT,
-            "Genetic Algorithm (DEAP)": AlgorithmType.GENETIC_ALGORITHM,
-            "Heuristic Algorithm": AlgorithmType.HEURISTIC,
-            "Deferred Acceptance (DA)": AlgorithmType.DEFERRED_ACCEPTANCE
+            "Linear Programming (PuLP)": AlgorithmType.LINEAR_PROGRAMMING
         }
         
         selected_algorithm = st.selectbox(
@@ -221,17 +220,8 @@ class JobAllocationApp:
         params = {}
         
         with st.expander("Advanced Parameters", expanded=False):
-            if algorithm_type == AlgorithmType.GENETIC_ALGORITHM:
-                params['population_size'] = st.slider("Population Size", 20, 200, 50)
-                params['generations'] = st.slider("Generations", 50, 500, 100)
-                params['crossover_prob'] = st.slider("Crossover Probability", 0.1, 1.0, 0.7)
-                params['mutation_prob'] = st.slider("Mutation Probability", 0.01, 0.5, 0.2)
-                
-            elif algorithm_type == AlgorithmType.HEURISTIC:
-                params['improvement_iterations'] = st.slider("Improvement Iterations", 50, 500, 100)
-                
-            elif algorithm_type == AlgorithmType.DEFERRED_ACCEPTANCE:
-                params['max_iterations'] = st.slider("Max Iterations", 100, 2000, 1000)
+            # Linear Programming doesn't need additional parameters
+            pass
         
         return params
     
@@ -445,6 +435,51 @@ class JobAllocationApp:
                 
                 st.write("**Operator Utilization:**")
                 st.bar_chart(utilization_data)
+        
+        # Gantt chart section
+        st.divider()
+        st.subheader("Schedule Gantt Chart")
+        
+        if result.assignments:
+            # Convert assignments to DataFrame format for Gantt chart
+            gantt_data = []
+            for assignment in result.assignments:
+                operator = next(op for op in st.session_state.operators if op.operator_id == assignment.operator_id)
+                task = next(task for task in st.session_state.tasks if task.task_id == assignment.task_id)
+                
+                # Create datetime objects for start and end times
+                today = date.today()
+                start_time = datetime.combine(today, datetime.min.time().replace(hour=assignment.start_hour))
+                end_time = datetime.combine(today, datetime.min.time().replace(hour=assignment.end_hour))
+                
+                gantt_data.append({
+                    'staff': operator.name,
+                    'task': task.name,
+                    'start': start_time,
+                    'end': end_time
+                })
+            
+            gantt_df = pd.DataFrame(gantt_data)
+            
+            # Generate Gantt chart
+            date_str = today.strftime('%Y-%m-%d')
+            fig = plot_shift_schedule(gantt_df, date_str)
+            
+            # Display in Streamlit
+            st.pyplot(fig)
+            
+            # Add download button for the chart
+            chart_path = f'./shift_{date_str}.png'
+            if os.path.exists(chart_path):
+                with open(chart_path, 'rb') as f:
+                    st.download_button(
+                        label="Download Gantt Chart",
+                        data=f.read(),
+                        file_name=f'gantt_chart_{algorithm_name}_{date_str}.png',
+                        mime='image/png'
+                    )
+        else:
+            st.info("No assignments to display in Gantt chart")
     
     def render_comparison_section(self):
         """Algorithm comparison section"""
@@ -588,11 +623,7 @@ class JobAllocationApp:
             st.session_state.execution_status = "running"
             
             algorithms = [
-                AlgorithmType.LINEAR_PROGRAMMING,
-                AlgorithmType.CP_SAT,
-                AlgorithmType.GENETIC_ALGORITHM,
-                AlgorithmType.HEURISTIC,
-                AlgorithmType.DEFERRED_ACCEPTANCE
+                AlgorithmType.LINEAR_PROGRAMMING
             ]
             
             progress_bar = st.progress(0)

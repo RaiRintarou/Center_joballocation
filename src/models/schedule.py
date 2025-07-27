@@ -6,10 +6,6 @@ from enum import Enum
 
 class AlgorithmType(Enum):
     LINEAR_PROGRAMMING = "linear_programming"
-    CP_SAT = "cp_sat"
-    GENETIC_ALGORITHM = "genetic_algorithm"
-    HEURISTIC = "heuristic"
-    DEFERRED_ACCEPTANCE = "deferred_acceptance"
 
 
 @dataclass
