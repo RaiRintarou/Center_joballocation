@@ -229,8 +229,8 @@ class MetricsCalculator:
                 start_time = assignment.start_hour
                 end_time = assignment.start_hour + assignment.duration_hours
                 
-                available_start = operator.available_hours[0]
-                available_end = operator.available_hours[1]
+                available_start = operator.available_hours[0].hour
+                available_end = operator.available_hours[1].hour
                 
                 if start_time < available_start or end_time > available_end:
                     violations += 1
